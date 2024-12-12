@@ -188,13 +188,13 @@ class Solution():
         huggingface_token = os.getenv("HF_TOKEN", "")
        
         model = AutoModelForCausalLM.from_pretrained(
-            "meta-llama/Llama-3.2-3B-Instruct",
+            "meta-llama/Llama-3.2-1B-Instruct",
             token=huggingface_token,
             torch_dtype=torch.float32,
             device_map="cpu"
         )
         tokenizer = AutoTokenizer.from_pretrained(
-            "meta-llama/Llama-3.2-3B-Instruct",
+            "meta-llama/Llama-3.2-1B-Instruct",
             token=huggingface_token
         )
         return model, tokenizer
@@ -233,7 +233,7 @@ class Solution():
         # Tokenize the prompt
         inputs = self.tokenizer(prompt, return_tensors="pt")
 
-        response = self.model.generate(**inputs, max_new_tokens=500)
+        response = self.tokenizer.decode(self.model.generate(**inputs, max_new_tokens=500)[0], skip_special_tokens=True)
 
         content = helper.extract_content_from_LLM_reply(response)
 
