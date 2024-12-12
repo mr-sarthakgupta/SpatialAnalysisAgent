@@ -219,56 +219,6 @@ class Solution():
 
         
         self.chat_history.append({'role': 'user', 'content': prompt})
-        # while (not isSucceed) and (count < retry_cnt):
-        #     try:
-        #         count += 1
-        #         response = client.chat.completions.create(model=model,
-        #                                                   # messages=self.chat_history,  # Too many tokens to run.
-        #                                                   messages=[
-        #                                                       {"role": "system", "content": system_role},
-        #                                                       {"role": "user", "content": prompt},
-        #                                                   ],
-        #                                                   temperature=temperature,
-        #                                                   stream=True
-
-        #                                                   )
-        #         isSucceed = True
-        #     except Exception as e:
-        #         # logging.error(f"Error in get_LLM_reply(), will sleep {sleep_sec} seconds, then retry {count}/{retry_cnt}: \n", e)
-        #         print(f"Error in get_LLM_reply(), will sleep {sleep_sec} seconds, then retry {count}/{retry_cnt}: \n",
-        #               e)
-        #         time.sleep(sleep_sec)
-
-
-        # response_chucks = []
-        # accumulated_response = ""
-        # if stream:
-
-        #     for chunk in response:
-        #         response_chucks.append(chunk)
-        #         content = getattr(chunk.choices[0].delta, 'content', '')
-
-
-        #         if content is not None:
-        #             accumulated_response += content
-
-        #     if verbose:
-        #         print(accumulated_response)
-        #         #
-        #         # response_chucks.append(content)
-        # # if verbose:
-        # #     self.clear_console()  # Clear previous output
-        # #     print(accumulated_response)
-
-        # else:
-        #     content = response.choices[0].message.content
-        #     print(content)
-
-        # print('\n\n')
-        # # print("Got LLM reply.")
-
-        # response = response_chucks  # good for saving
-
         messages=[
                 {"role": "system", "content": system_role},
                 {"role": "user", "content": prompt},

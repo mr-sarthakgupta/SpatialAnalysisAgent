@@ -94,11 +94,9 @@ def generate_task_name_with_gpt(task_description):
     prompt = f"Given the following task description: '{task_description}',give the best task that represents this task.\n\n" + \
              f"Provide the task name in just one or two words. \n\n" + \
              f"Underscore '_' is the only alphanumeric symbols that is allowed in a task name. A task_name must not contain quotations or inverted commas example or space. \n"
-    messages=[
-
-            {"role": "user", "content": prompt},
-        ]
-    response = get_LLM_reply(messages=messages, model=)
+    # messages=[
+    #         {"role": "user", "content": prompt},
+    response = get_LLM_reply(prompt=prompt)
 
     task_name = response.choices[0].message.content
     return task_name
@@ -174,7 +172,6 @@ def get_code_for_operation(task_description, data_path, selected_tool, selected_
     response = get_LLM_reply(
         prompt=prompt,
         system_role=constants.operation_role,
-        model='gpt-4o',
     )
     #Print the response
     extracted_code = extract_code(response)
@@ -205,7 +202,6 @@ def ask_LLM_to_review_operation_code(extracted_code, selected_tool_ID, selected_
     # print(f"review_prompt:\n{review_prompt}")
     response = get_LLM_reply(prompt=operation_code_review_prompt,
                              system_role=constants.operation_role,
-                             model='gpt-4o',
                              verbose=False,
                              stream=False,
                              retry_cnt=5,
@@ -287,54 +283,13 @@ def parse_llm_reply(LLM_reply_str):
 
 def get_LLM_reply(prompt="Provide Python code to read a CSV file from this URL and store the content in a variable. ",
                   system_role=r'You are a professional Geo-information scientist and developer.',
-                  model=r"gpt-4o",
-                  # model=r"gpt-3.5-turbo",
                   verbose=True,
                   temperature=1,
                   stream=True,
                   retry_cnt=3,
                   sleep_sec=10,
                   ):
-    # Generate prompt for ChatGPT
-    # url = "https://github.com/gladcolor/LLM-Geo/raw/master/overlay_analysis/NC_tract_population.csv"
-    # prompt = prompt + url
-
-    # Query ChatGPT with the prompt
-    # if verbose:
-    #     print("Geting LLM reply... \n")
-    client = create_openai_client()
-    count = 0
-    isSucceed = False
-    while (not isSucceed) and (count < retry_cnt):
-        try:
-            count += 1
-            response = client.chat.completions.create(model=model,
-                                                      messages=[
-                                                          {"role": "system", "content": system_role},
-                                                          {"role": "user", "content": prompt},
-                                                      ],
-                                                      temperature=temperature,
-                                                      stream=stream)
-        except Exception as e:
-            # logging.error(f"Error in get_LLM_reply(), will sleep {sleep_sec} seconds, then retry {count}/{retry_cnt}: \n", e)
-            print(f"Error in get_LLM_reply(), will sleep {sleep_sec} seconds, then retry {count}/{retry_cnt}: \n", e)
-            time.sleep(sleep_sec)
-
-    # response_chucks = []
-    # if stream:
-    #     for chunk in response:
-    #         response_chucks.append(chunk)
-    #         content = chunk.choices[0].delta.content
-    #         if content is not None:
-    #             if verbose:
-    #                 print(content, end='')
-    # else:
-    #     content = response.choices[0].message.content
-    #     # print(content)
-    # print('\n\n')
-    # # print("Got LLM reply.")
-
-    # response = response_chucks  # good for saving
+   
 
     messages=[
                 {"role": "system", "content": system_role},
@@ -500,7 +455,6 @@ def execute_complete_program(code: str, try_cnt: int, task: str, model_name: str
             print("Sending error information to LLM for debugging...")
             response = get_LLM_reply(prompt=debug_prompt,
                                      system_role=constants.debug_role,
-                                     model=model_name,
                                      verbose=True,
                                      stream=True,
                                      retry_cnt=5,
