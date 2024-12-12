@@ -9,8 +9,25 @@ from openai import OpenAI
 import configparser
 import json
 from collections import OrderedDict
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
 
+def load_LLM():
+    huggingface_token = os.getenv("HF_TOKEN", "")
+    
+    model = AutoModelForCausalLM.from_pretrained(
+        "meta-llama/Llama-3.2-3B-Instruct",
+        token=huggingface_token,
+        torch_dtype=torch.float32,
+        device_map="cpu"
+    )
+    tokenizer = AutoTokenizer.from_pretrained(
+        "meta-llama/Llama-3.2-3B-Instruct",
+        token=huggingface_token
+    )
+    return model, tokenizer
 
+model, tokenizer = load_LLM()
 
 DataEye_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'data_eye_constants')
 if DataEye_path not in sys.path:
@@ -73,8 +90,7 @@ def get_data_overview(data_location_dict):
 def add_data_overview_to_data_location(task, data_location_list, model = r'gpt-4o-2024-08-06'):
     prompt = get_prompt_to_pick_up_data_locations(task=task,
                                                   data_locations=data_location_list)
-    response = get_LLM_reply(prompt=prompt,
-                                    model=model)
+    response = get_LLM_reply(prompt=prompt)
     # pprint.pp(result.choices[0].message)
     attributes_json = json.loads(response.choices[0].message.content)
     get_data_overview(attributes_json)
@@ -163,10 +179,11 @@ def _get_raster_str(dataset, statistics=False, approx=False):  # receive rasteri
     raster_str = str(raster_dict)
     return raster_str
 
+
+
 # beta vervsion of using structured output. # https://cookbook.openai.com/examples/structured_outputs_intro
 # https://platform.openai.com/docs/guides/structured-outputs/examples
 def get_LLM_reply(prompt,
-                  model=r"gpt-4o",
                   verbose=True,
                   temperature=1,
                   stream=True,
@@ -180,25 +197,42 @@ def get_LLM_reply(prompt,
     # Query ChatGPT with the prompt
     # if verbose:
     #     print("Geting LLM reply... \n")
-    count = 0
-    isSucceed = False
-    while (not isSucceed) and (count < retry_cnt):
-        try:
-            count += 1
-            response = client.beta.chat.completions.parse(model=model,
-                                                      messages=[
-                                                          {"role": "system", "content": eye_constants.role},
-                                                          {"role": "user", "content": prompt},
-                                                      ],
-                                                      temperature=temperature,
-                                                      response_format=eye_constants.Data_locations,
-                                                       )
-        except Exception as e:
-            # logging.error(f"Error in get_LLM_reply(), will sleep {sleep_sec} seconds, then retry {count}/{retry_cnt}: \n", e)
-            print(f"Error in get_LLM_reply(), will sleep {sleep_sec} seconds, then retry {count}/{retry_cnt}: \n",
-                  e)
-            time.sleep(sleep_sec)
+    # count = 0
+    # isSucceed = False
+    # while (not isSucceed) and (count < retry_cnt):
+    #     try:
+    #         count += 1
+    #         response = client.beta.chat.completions.parse(model=model,
+    #                                                   messages=[
+    #                                                       {"role": "system", "content": eye_constants.role},
+    #                                                       {"role": "user", "content": prompt},
+    #                                                   ],
+    #                                                   temperature=temperature,
+    #                                                   response_format=eye_constants.Data_locations,
+    #                                                    )
+    #     except Exception as e:
+    #         # logging.error(f"Error in get_LLM_reply(), will sleep {sleep_sec} seconds, then retry {count}/{retry_cnt}: \n", e)
+    #         print(f"Error in get_LLM_reply(), will sleep {sleep_sec} seconds, then retry {count}/{retry_cnt}: \n",
+    #               e)
+    #         time.sleep(sleep_sec)
+
+    messages=[
+                {"role": "user", "content": prompt},
+            ],
+        
+    prompt = tokenizer.apply_chat_template(
+    messages, 
+        tokenize=False,  # We want a string, not tokenized input
+        add_generation_prompt=True  # Adds a generation prompt at the end
+    )
+
+    # Tokenize the prompt
+    inputs = tokenizer(prompt, return_tensors="pt")
+
+    response = model.generate(**inputs, max_new_tokens=500)
 
     return response
 
+    
+    
 
