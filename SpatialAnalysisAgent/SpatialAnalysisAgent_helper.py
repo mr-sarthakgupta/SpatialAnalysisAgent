@@ -8,6 +8,8 @@ import traceback
 # import openai
 from collections import deque
 from io import StringIO
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
 
 import nest_asyncio
 from IPython.core.display_functions import clear_output
@@ -33,6 +35,23 @@ current_script_dir = os.path.dirname(os.path.abspath(__file__))
 # Add the directory to sys.path
 if current_script_dir not in sys.path:
     sys.path.append(current_script_dir)
+
+def load_LLM():
+    huggingface_token = os.getenv("HF_TOKEN", "")
+    
+    model = AutoModelForCausalLM.from_pretrained(
+        "meta-llama/Llama-3.2-3B-Instruct",
+        token=huggingface_token,
+        torch_dtype=torch.float32,
+        device_map="cpu"
+    )
+    tokenizer = AutoTokenizer.from_pretrained(
+        "meta-llama/Llama-3.2-3B-Instruct",
+        token=huggingface_token
+    )
+    return model, tokenizer
+
+model, tokenizer = load_LLM()
 
 
 def load_config():
@@ -75,14 +94,11 @@ def generate_task_name_with_gpt(task_description):
     prompt = f"Given the following task description: '{task_description}',give the best task that represents this task.\n\n" + \
              f"Provide the task name in just one or two words. \n\n" + \
              f"Underscore '_' is the only alphanumeric symbols that is allowed in a task name. A task_name must not contain quotations or inverted commas example or space. \n"
-    client = create_openai_client()
-    response = client.chat.completions.create(
-        model='gpt-4o',
-        messages=[
+    messages=[
 
             {"role": "user", "content": prompt},
         ]
-    )
+    response = get_LLM_reply(messages=messages, model=)
 
     task_name = response.choices[0].message.content
     return task_name
@@ -268,6 +284,7 @@ def parse_llm_reply(LLM_reply_str):
     return selection_operation
 
 
+
 def get_LLM_reply(prompt="Provide Python code to read a CSV file from this URL and store the content in a variable. ",
                   system_role=r'You are a professional Geo-information scientist and developer.',
                   model=r"gpt-4o",
@@ -303,21 +320,37 @@ def get_LLM_reply(prompt="Provide Python code to read a CSV file from this URL a
             print(f"Error in get_LLM_reply(), will sleep {sleep_sec} seconds, then retry {count}/{retry_cnt}: \n", e)
             time.sleep(sleep_sec)
 
-    response_chucks = []
-    if stream:
-        for chunk in response:
-            response_chucks.append(chunk)
-            content = chunk.choices[0].delta.content
-            if content is not None:
-                if verbose:
-                    print(content, end='')
-    else:
-        content = response.choices[0].message.content
-        # print(content)
-    print('\n\n')
-    # print("Got LLM reply.")
+    # response_chucks = []
+    # if stream:
+    #     for chunk in response:
+    #         response_chucks.append(chunk)
+    #         content = chunk.choices[0].delta.content
+    #         if content is not None:
+    #             if verbose:
+    #                 print(content, end='')
+    # else:
+    #     content = response.choices[0].message.content
+    #     # print(content)
+    # print('\n\n')
+    # # print("Got LLM reply.")
 
-    response = response_chucks  # good for saving
+    # response = response_chucks  # good for saving
+
+    messages=[
+                {"role": "system", "content": system_role},
+                {"role": "user", "content": prompt},
+            ],
+        
+    prompt = tokenizer.apply_chat_template(
+    messages, 
+        tokenize=False,  # We want a string, not tokenized input
+        add_generation_prompt=True  # Adds a generation prompt at the end
+    )
+
+    # Tokenize the prompt
+    inputs = tokenizer(prompt, return_tensors="pt")
+
+    response = model.generate(**inputs, max_new_tokens=500)
 
     return response
 
