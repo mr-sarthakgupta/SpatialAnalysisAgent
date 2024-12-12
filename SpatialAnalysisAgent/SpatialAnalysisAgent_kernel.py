@@ -6,6 +6,8 @@ import pandas as pd
 import geopandas as gpd
 # from pyvis.network import Network
 from openai import OpenAI
+from transformers import AutoModelForCausalLM, AutoTokenizer
+import torch
 import configparser
 import pickle
 import time
@@ -79,7 +81,8 @@ class Solution():
         self.assembly_prompt = ""
 
         self.parent_solution = None
-        self.model = model
+        self.model, self.tokenizer = self.load_LLM()
+
         self.stream = stream
         self.verbose = verbose
 
@@ -181,6 +184,20 @@ class Solution():
         return reviewed_code
 
 
+    def load_LLM(self):
+        huggingface_token = os.getenv("HF_TOKEN", "")
+       
+        model = AutoModelForCausalLM.from_pretrained(
+            "meta-llama/Llama-3.2-3B-Instruct",
+            token=huggingface_token,
+            torch_dtype=torch.float32,
+            device_map="cpu"
+        )
+        tokenizer = AutoTokenizer.from_pretrained(
+            "meta-llama/Llama-3.2-3B-Instruct",
+            token=huggingface_token
+        )
+        return model, tokenizer
 
 
     def get_LLM_reply(self,
@@ -200,60 +217,73 @@ class Solution():
         if model is None:
             model = self.model
 
-        client = create_openai_client()
-        count = 0
-        isSucceed = False
-        response = None  # Initialize response to avoid UnboundLocalError
+        
         self.chat_history.append({'role': 'user', 'content': prompt})
-        while (not isSucceed) and (count < retry_cnt):
-            try:
-                count += 1
-                response = client.chat.completions.create(model=model,
-                                                          # messages=self.chat_history,  # Too many tokens to run.
-                                                          messages=[
-                                                              {"role": "system", "content": system_role},
-                                                              {"role": "user", "content": prompt},
-                                                          ],
-                                                          temperature=temperature,
-                                                          stream=True
+        # while (not isSucceed) and (count < retry_cnt):
+        #     try:
+        #         count += 1
+        #         response = client.chat.completions.create(model=model,
+        #                                                   # messages=self.chat_history,  # Too many tokens to run.
+        #                                                   messages=[
+        #                                                       {"role": "system", "content": system_role},
+        #                                                       {"role": "user", "content": prompt},
+        #                                                   ],
+        #                                                   temperature=temperature,
+        #                                                   stream=True
 
-                                                          )
-                isSucceed = True
-            except Exception as e:
-                # logging.error(f"Error in get_LLM_reply(), will sleep {sleep_sec} seconds, then retry {count}/{retry_cnt}: \n", e)
-                print(f"Error in get_LLM_reply(), will sleep {sleep_sec} seconds, then retry {count}/{retry_cnt}: \n",
-                      e)
-                time.sleep(sleep_sec)
-
-
-        response_chucks = []
-        accumulated_response = ""
-        if stream:
-
-            for chunk in response:
-                response_chucks.append(chunk)
-                content = getattr(chunk.choices[0].delta, 'content', '')
+        #                                                   )
+        #         isSucceed = True
+        #     except Exception as e:
+        #         # logging.error(f"Error in get_LLM_reply(), will sleep {sleep_sec} seconds, then retry {count}/{retry_cnt}: \n", e)
+        #         print(f"Error in get_LLM_reply(), will sleep {sleep_sec} seconds, then retry {count}/{retry_cnt}: \n",
+        #               e)
+        #         time.sleep(sleep_sec)
 
 
-                if content is not None:
-                    accumulated_response += content
+        # response_chucks = []
+        # accumulated_response = ""
+        # if stream:
 
-            if verbose:
-                print(accumulated_response)
-                #
-                # response_chucks.append(content)
-        # if verbose:
-        #     self.clear_console()  # Clear previous output
-        #     print(accumulated_response)
+        #     for chunk in response:
+        #         response_chucks.append(chunk)
+        #         content = getattr(chunk.choices[0].delta, 'content', '')
 
-        else:
-            content = response.choices[0].message.content
-            print(content)
 
-        print('\n\n')
-        # print("Got LLM reply.")
+        #         if content is not None:
+        #             accumulated_response += content
 
-        response = response_chucks  # good for saving
+        #     if verbose:
+        #         print(accumulated_response)
+        #         #
+        #         # response_chucks.append(content)
+        # # if verbose:
+        # #     self.clear_console()  # Clear previous output
+        # #     print(accumulated_response)
+
+        # else:
+        #     content = response.choices[0].message.content
+        #     print(content)
+
+        # print('\n\n')
+        # # print("Got LLM reply.")
+
+        # response = response_chucks  # good for saving
+
+        messages=[
+                {"role": "system", "content": system_role},
+                {"role": "user", "content": prompt},
+            ],
+        
+        prompt = self.tokenizer.apply_chat_template(
+        messages, 
+            tokenize=False,  # We want a string, not tokenized input
+            add_generation_prompt=True  # Adds a generation prompt at the end
+        )
+
+        # Tokenize the prompt
+        inputs = self.tokenizer(prompt, return_tensors="pt")
+
+        response = self.model.generate(**inputs, max_new_tokens=500)
 
         content = helper.extract_content_from_LLM_reply(response)
 
