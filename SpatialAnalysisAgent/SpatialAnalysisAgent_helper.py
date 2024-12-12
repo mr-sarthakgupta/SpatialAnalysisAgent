@@ -98,7 +98,8 @@ def generate_task_name_with_gpt(task_description):
     #         {"role": "user", "content": prompt},
     response = get_LLM_reply(prompt=prompt)
 
-    task_name = response.choices[0].message.content
+    task_name = response
+    print(f"Task name: {task_name}")
     return task_name
 
 
