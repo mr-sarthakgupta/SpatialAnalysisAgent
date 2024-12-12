@@ -12,3 +12,4 @@ toml:toml
 seaborn:seaborn
 pydantic:pydantic
 transformers:transformers
+torch:torch
