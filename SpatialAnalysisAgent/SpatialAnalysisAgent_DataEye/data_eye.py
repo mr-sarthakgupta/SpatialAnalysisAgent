@@ -72,21 +72,6 @@ def get_data_overview(data_location_dict):
             print("Error in get_data_overview()", data, e)
     return data_location_dict
 
-
-# def add_data_overview_to_data_location(task, data_location_list, model = r'gpt-4o-2024-08-06'):
-#     prompt = get_prompt_to_pick_up_data_locations(task=task,
-#                                                   data_locations=data_location_list)
-#     response = get_LLM_reply(prompt=prompt,
-#                                     model=model)
-#     # pprint.pp(result.choices[0].message)
-#     attributes_json = json.loads(response.choices[0].message.content)
-#     get_data_overview(attributes_json)
-#
-#     for idx, data in enumerate(attributes_json['data_locations']):
-#         meta_str = data['meta_str']
-#         data_location_list[idx] += ". Data overview: " + meta_str
-#     return attributes_json, data_location_list
-
 def add_data_overview_to_data_location(task, data_location_list, model = r'gpt-4o-2024-08-06'):
     prompt = get_prompt_to_pick_up_data_locations(task=task,
                                                   data_locations=data_location_list)
@@ -190,32 +175,7 @@ def get_LLM_reply(prompt,
                   retry_cnt=3,
                   sleep_sec=10,
                   ):
-    # Generate prompt for ChatGPT
-    # url = "https://github.com/gladcolor/LLM-Geo/raw/master/overlay_analysis/NC_tract_population.csv"
-    # prompt = prompt + url
-
-    # Query ChatGPT with the prompt
-    # if verbose:
-    #     print("Geting LLM reply... \n")
-    # count = 0
-    # isSucceed = False
-    # while (not isSucceed) and (count < retry_cnt):
-    #     try:
-    #         count += 1
-    #         response = client.beta.chat.completions.parse(model=model,
-    #                                                   messages=[
-    #                                                       {"role": "system", "content": eye_constants.role},
-    #                                                       {"role": "user", "content": prompt},
-    #                                                   ],
-    #                                                   temperature=temperature,
-    #                                                   response_format=eye_constants.Data_locations,
-    #                                                    )
-    #     except Exception as e:
-    #         # logging.error(f"Error in get_LLM_reply(), will sleep {sleep_sec} seconds, then retry {count}/{retry_cnt}: \n", e)
-    #         print(f"Error in get_LLM_reply(), will sleep {sleep_sec} seconds, then retry {count}/{retry_cnt}: \n",
-    #               e)
-    #         time.sleep(sleep_sec)
-
+    
     messages=[
                 {"role": "user", "content": prompt},
             ],
@@ -230,6 +190,8 @@ def get_LLM_reply(prompt,
     inputs = tokenizer(prompt, return_tensors="pt")
 
     response = model.generate(**inputs, max_new_tokens=500)
+    print(response)
+    exit()
 
     return response
 
