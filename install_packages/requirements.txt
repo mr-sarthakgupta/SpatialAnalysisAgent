@@ -13,3 +13,4 @@ seaborn:seaborn
 pydantic:pydantic
 transformers:transformers
 torch:torch
+accelerate:accelerate>=0.26.0
