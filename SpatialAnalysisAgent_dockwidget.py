@@ -1414,7 +1414,7 @@ class GPTRequestThread(QThread):
                     {"role": "user", "content": self.prompt},
                 ]
             )
-            reply = response.choices[0].message.content.strip()
+            reply = response
             # self.output_line.emit(f"AI: {reply}")
             self.chatgpt_update.emit(reply)
         except Exception as e:

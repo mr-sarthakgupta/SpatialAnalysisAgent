@@ -327,7 +327,7 @@ def extract_content_from_LLM_reply(response):
                 # print(content)
         # print()
     else:
-        content = response.choices[0].message.content
+        content = response
         # print(content)
 
     return content
