@@ -28,7 +28,7 @@ import networkx as nx
 import pandas as pd
 import geopandas as gpd
 from pyvis.network import Network
-import processing
+# import processing
 
 # Get the directory of the current script
 current_script_dir = os.path.dirname(os.path.abspath(__file__))

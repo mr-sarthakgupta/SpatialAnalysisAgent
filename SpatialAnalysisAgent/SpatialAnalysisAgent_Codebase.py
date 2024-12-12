@@ -1,4 +1,4 @@
-import processing
+# import processing
 
 Thematic_map_creation_sample = r'''
 #Importing necessary modules

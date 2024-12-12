@@ -1,0 +1,16 @@
+openai
+nest_asyncio
+networkx
+pyvis
+geopandas
+IPython
+iface
+jsonpickle
+regex
+langchain-openai
+toml
+seaborn
+pydantic
+transformers
+torch
+accelerate>=0.26.0
