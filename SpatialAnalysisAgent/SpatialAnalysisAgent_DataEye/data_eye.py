@@ -77,6 +77,8 @@ def add_data_overview_to_data_location(task, data_location_list, model = r'gpt-4
                                                   data_locations=data_location_list)
     response = get_LLM_reply(prompt=prompt)
     # pprint.pp(result.choices[0].message)
+    print("prompt:", prompt)
+    print("response:", response)
     attributes_json = json.loads(response)
     get_data_overview(attributes_json)
 
