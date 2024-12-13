@@ -177,6 +177,7 @@ def get_LLM_reply(prompt,
                   sleep_sec=10,
                   ):
     
+
     messages=[
                 {"role": "user", "content": prompt},
             ],
@@ -190,6 +191,6 @@ def get_LLM_reply(prompt,
     # Tokenize the prompt
     inputs = tokenizer(prompt, return_tensors="pt")
 
-    response = tokenizer.decode(model.generate(**inputs, max_new_tokens=500)[0], skip_special_tokens=True)
+    response = tokenizer.decode(model.generate(**inputs, max_new_tokens=500, pad_token_id=tokenizer.eos_token_id)[0], skip_special_tokens=True)
     
     return response

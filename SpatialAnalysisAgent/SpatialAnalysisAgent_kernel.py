@@ -233,7 +233,7 @@ class Solution():
         # Tokenize the prompt
         inputs = self.tokenizer(prompt, return_tensors="pt")
 
-        response = self.tokenizer.decode(self.model.generate(**inputs, max_new_tokens=500)[0], skip_special_tokens=True)
+        response = self.tokenizer.decode(self.model.generate(**inputs, max_new_tokens=500, pad_token_id=self.tokenizer.eos_token_id)[0], skip_special_tokens=True)
 
         content = helper.extract_content_from_LLM_reply(response)
 
