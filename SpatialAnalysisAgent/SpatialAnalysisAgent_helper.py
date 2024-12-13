@@ -290,8 +290,8 @@ def get_LLM_reply(prompt="Provide Python code to read a CSV file from this URL a
                   retry_cnt=3,
                   sleep_sec=10,
                   ):
-   
 
+    model.generation_config.pad_token_id = tokenizer.pad_token_id
     messages=[
                 {"role": "system", "content": system_role},
                 {"role": "user", "content": prompt},
