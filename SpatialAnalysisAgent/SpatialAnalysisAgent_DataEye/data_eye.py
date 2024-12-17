@@ -11,6 +11,9 @@ import json
 from collections import OrderedDict
 from transformers import AutoModelForCausalLM, AutoTokenizer
 import torch
+from ollama import chat
+from pydantic import BaseModel, Field
+from typing import List
 
 def load_LLM():
     huggingface_token = os.getenv("HF_TOKEN", "")
@@ -78,8 +81,7 @@ def add_data_overview_to_data_location(task, data_location_list, model = r'gpt-4
     response = get_LLM_reply(prompt=prompt)
     # pprint.pp(result.choices[0].message)
 
-    # attributes_json = json.loads(response)
-    attributes_json = {'data_locations': response}
+    attributes_json = json.loads(response)
     get_data_overview(attributes_json)
 
     for idx, data in enumerate(attributes_json.get('data_locations', [])):
@@ -166,10 +168,18 @@ def _get_raster_str(dataset, statistics=False, approx=False):  # receive rasteri
     raster_str = str(raster_dict)
     return raster_str
 
-
-
 # beta vervsion of using structured output. # https://cookbook.openai.com/examples/structured_outputs_intro
 # https://platform.openai.com/docs/guides/structured-outputs/examples
+
+
+class DataLocation(BaseModel):
+    location: str = Field(..., description="Full file path to the data source")
+    format: str = Field(..., description="File format of the data source")
+
+class DataLocationConfig(BaseModel):
+    data_locations: List[DataLocation] = Field(..., description="List of data source locations")
+
+
 def get_LLM_reply(prompt,
                   verbose=True,
                   temperature=1,
@@ -177,21 +187,14 @@ def get_LLM_reply(prompt,
                   retry_cnt=3,
                   sleep_sec=10,
                   ):
-    
-
+    response = chat(
     messages=[
-                {"role": "user", "content": prompt},
-            ],
-        
-    prompt = tokenizer.apply_chat_template(
-    messages, 
-        tokenize=False,  # We want a string, not tokenized input
-        add_generation_prompt=True  # Adds a generation prompt at the end
+        {
+        'role': 'user',
+        'content': prompt,
+        }
+    ],
+    model='llama3.2:1b',
+    format=DataLocationConfig.model_json_schema(),
     )
-
-    # Tokenize the prompt
-    inputs = tokenizer(prompt, return_tensors="pt")
-
-    response = tokenizer.decode(model.generate(**inputs, max_new_tokens=500, pad_token_id=tokenizer.eos_token_id)[0], skip_special_tokens=True)
-    
-    return response
+    return response.message.content
